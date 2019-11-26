@@ -1,0 +1,6 @@
+<component name="CopyrightManager">
+  <copyright>
+    <option name="notice" value="@(#) &amp;#36;file.className&#10;版权声明 厦门畅享信息技术有限公司, 版权所有 违者必究&#10;&#10;&lt;br&gt; Copyright:  Copyright (c) &amp;#36;today.year&#10;&lt;br&gt; Company:厦门畅享信息技术有限公司&#10;&lt;br&gt; @author &amp;#36;username&#10;&lt;br&gt; &amp;#36;today.format('yyyy-MM-dd HH:mm:ss')" />
+    <option name="myName" value="sunsharing" />
+  </copyright>
+</component>
