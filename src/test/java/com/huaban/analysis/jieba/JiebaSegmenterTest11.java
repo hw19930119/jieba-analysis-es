@@ -23,6 +23,9 @@ import junit.framework.TestCase;
 
 import org.junit.Test;
 
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -58,6 +61,11 @@ public class JiebaSegmenterTest11 extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
+        URI uri = this.getClass().getResource("/").toURI();
+        Path configDir = Paths.get(uri);
+        configDir = Paths.get("conf");
+        String s = configDir.toAbsolutePath().toString();
+        System.out.println(s);
         // WordDictionary.getInstance().init(Paths.get("conf"));
         // WordDictionary.getInstance().addWord("孙小艾");
     }

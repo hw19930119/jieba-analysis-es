@@ -11,6 +11,23 @@
     <output url="file://$PROJECT_DIR$/classes" />
   </component>
   <component name="SvnBranchConfigurationManager">
+    <option name="myConfigurationMap">
+      <map>
+        <entry key="$PROJECT_DIR$">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchUrls">
+                <list>
+                  <option value="http://192.168.0.222:8080/CQdev/01System/01SourceCode/branches" />
+                  <option value="http://192.168.0.222:8080/CQdev/01System/01SourceCode/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="http://192.168.0.222:8080/CQdev/01System/01SourceCode/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+      </map>
+    </option>
     <option name="mySupportsUserInfoFilter" value="true" />
   </component>
 </project>

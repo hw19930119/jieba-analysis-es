@@ -1,6 +1,12 @@
 package com.huaban.analysis.jieba;
 
+import com.huaban.analysis.jieba.config.PropertyUtil;
+
+import org.elasticsearch.SpecialPermission;
+
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -9,6 +15,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,29 +33,53 @@ import java.util.Set;
  */
 public class WordDictionary {
     private static WordDictionary singleton;
-    private static final String MAIN_DICT = "/dict.txt"; //系统词库文件
-    private static String USER_DICT_SUFFIX = ".dict"; //用户词库文件后缀
+    private static final String MAIN_DICT = "dict.txt"; //系统词库文件
+    private static final String DICT_STOP_WORDS = "stop_words.txt"; //停止词文件
+    private static final String DICT_IDF = "idf_dict.txt"; //IDF逆文件词语料库
+    private static final String DICT_USER_SUFFIX = ".dict"; //用户词库文件后缀
 
     private static HashMap<String, Double> idfMap; //IDF逆文件语料库
     private static HashSet<String> stopWordsSet; //停止词
     private static double idfMedian; //idf中位数
 
-    public final Map<String, Double> freqs = new HashMap<String, Double>();
-    public final Set<String> loadedPath = new HashSet<String>();
+    private final Map<String, Double> freqs = new HashMap<String, Double>();
+    private final Set<String> loadedPath = new HashSet<String>();
+
     private Double minFreq = Double.MAX_VALUE;
     private Double total = 0.0;
     private DictSegment _dict;
+    private Path configPath;
 
     private WordDictionary() {
-        this.loadDict();
-        if (stopWordsSet == null) {
-            stopWordsSet = new HashSet<>();
-            loadStopWords(stopWordsSet, this.getClass().getResourceAsStream("/stop_words.txt"));
-        }
-        if (idfMap == null) {
-            idfMap = new HashMap<>();
-            loadIDFMap(idfMap, this.getClass().getResourceAsStream("/idf_dict.txt"));
-        }
+        this.configPath = Paths.get(PropertyUtil.getKey("config"));
+
+        SpecialPermission.check();
+        AccessController.doPrivileged((PrivilegedAction<WordDictionary>) () -> {
+            System.out.println(String.format(Locale.getDefault(), "插件配置文件路径为：%s",
+                configPath.toAbsolutePath().toString()));
+            try {
+                this.loadDict(); //加载系统词典
+                if (stopWordsSet == null) {
+                    System.out.println(String.format(Locale.getDefault(), "加载停止词词典[%s]成功",
+                        configPath.resolve(DICT_STOP_WORDS).toAbsolutePath().toString()));
+                    stopWordsSet = new HashSet<>();
+                    loadStopWords(stopWordsSet, new FileInputStream(configPath.resolve(DICT_STOP_WORDS).toAbsolutePath().toFile()));
+                }
+                if (idfMap == null) {
+                    System.out.println(String.format(Locale.getDefault(), "加载IDF语料库[%s]成功",
+                        configPath.resolve(DICT_IDF).toAbsolutePath().toString()));
+                    idfMap = new HashMap<>();
+                    loadIDFMap(idfMap, new FileInputStream(configPath.resolve(DICT_IDF).toAbsolutePath().toFile()));
+                }
+                //加载用户自定义词典
+                init(configPath);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+            return this;
+        });
     }
 
     public static WordDictionary getInstance() {
@@ -61,7 +94,6 @@ public class WordDictionary {
         return singleton;
     }
 
-
     /**
      * for ES to initialize the user dictionary.
      *
@@ -69,22 +101,20 @@ public class WordDictionary {
      */
     public void init(Path configFile) {
         String abspath = configFile.toAbsolutePath().toString();
-        System.out.println("initialize user dictionary:" + abspath);
+        System.out.println("开始加载用户自定义词典，目录:" + abspath);
         synchronized (WordDictionary.class) {
             if (loadedPath.contains(abspath)) {
                 return;
             }
-
             DirectoryStream<Path> stream;
             try {
-                stream = Files.newDirectoryStream(configFile, String.format(Locale.getDefault(), "*%s", USER_DICT_SUFFIX));
+                stream = Files.newDirectoryStream(configFile, String.format(Locale.getDefault(), "*%s", DICT_USER_SUFFIX));
                 for (Path path : stream) {
-                    System.out.println(String.format(Locale.getDefault(), "loading dict %s", path.toString()));
-                    singleton.loadUserDict(path);
+                    System.out.println(String.format(Locale.getDefault(), "加载用户自定义词典[%s]", path.toString()));
+                    loadUserDict(path);
                 }
                 loadedPath.add(abspath);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
                 System.out.println(String.format(Locale.getDefault(), "%s: load user dict failure!", configFile.toString()));
             }
@@ -97,7 +127,7 @@ public class WordDictionary {
                 if (!loadedPath.contains(path)) {
                     try {
                         System.out.println("initialize user dictionary: " + path);
-                        singleton.loadUserDict(path);
+                        loadUserDict(path);
                         loadedPath.add(path);
                     } catch (Exception e) {
                         // TODO Auto-generated catch block
@@ -120,17 +150,15 @@ public class WordDictionary {
     /**
      * 加载默认系统词典
      */
-    public void loadDict() {
+    public void loadDict() throws FileNotFoundException {
         _dict = new DictSegment((char) 0);
-        InputStream is = this.getClass().getResourceAsStream(MAIN_DICT);
+        InputStream is = new FileInputStream(configPath.resolve(MAIN_DICT).toAbsolutePath().toFile());
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
-
             long s = System.currentTimeMillis();
             while (br.ready()) {
                 String line = br.readLine();
                 String[] tokens = line.split("[\t ]+");
-
                 // if (tokens.length < 2) {
                 // continue; // 词典格式和 dict.txt 一样，一个词占一行；每一行分三部分：词语、词频（可省略）、词性（可省略）
                 //下方做了一个兼容处理
@@ -146,9 +174,10 @@ public class WordDictionary {
                 entry.setValue((Math.log(entry.getValue() / total)));
                 minFreq = Math.min(entry.getValue(), minFreq);
             }
-            System.out.println(String.format(Locale.getDefault(), "main dict load finished, time elapsed %d ms",
-                System.currentTimeMillis() - s));
+            System.out.println(String.format(Locale.getDefault(), "加载系统词典[%s] load finished, time elapsed %d ms",
+                configPath.resolve(MAIN_DICT).toAbsolutePath().toString(), System.currentTimeMillis() - s));
         } catch (IOException e) {
+            e.printStackTrace();
             System.err.println(String.format(Locale.getDefault(), "%s load failure!", MAIN_DICT));
         } finally {
             try {
@@ -252,7 +281,6 @@ public class WordDictionary {
      * @param in filePath
      */
     private void loadStopWords(Set<String> set, InputStream in) {
-        System.out.println("加载停止词文件...");
         BufferedReader bufr;
         try {
             bufr = new BufferedReader(new InputStreamReader(in));
@@ -277,7 +305,6 @@ public class WordDictionary {
      * @param in
      */
     private void loadIDFMap(Map<String, Double> map, InputStream in) {
-        System.out.println("加载idf值语料库文件...");
         BufferedReader bufr;
         try {
             bufr = new BufferedReader(new InputStreamReader(in));

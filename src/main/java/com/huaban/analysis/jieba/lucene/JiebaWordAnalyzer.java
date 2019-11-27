@@ -49,7 +49,7 @@ public class JiebaWordAnalyzer extends Analyzer {
             PositionIncrementAttribute positionIncrementAttribute = tokenStream.getAttribute(PositionIncrementAttribute.class);
             // System.out.println(charTermAttribute.toString() + " (" + offsetAttribute.startOffset() + " - " + offsetAttribute.endOffset() + ") " + positionIncrementAttribute.getPositionIncrement());
             System.out.print("[" + charTermAttribute.toString() + " ," + offsetAttribute.startOffset() + ", " + offsetAttribute.endOffset() + "] ,");
-
+            System.out.println();
         }
         tokenStream.close();
     }

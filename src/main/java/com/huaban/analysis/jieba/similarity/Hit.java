@@ -16,8 +16,26 @@ package com.huaban.analysis.jieba.similarity;
  * @author chenhao
  */
 public class Hit implements Comparable {
-    private String text;
-    private Double score;
+    private String text;//目标文本
+    private Double score;//相似度
+    private String eventId;//目标文本id
+    private String sourceId;//源文本id
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
+    }
+
+    public String getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(String sourceId) {
+        this.sourceId = sourceId;
+    }
 
     public String getText() {
         return text;
