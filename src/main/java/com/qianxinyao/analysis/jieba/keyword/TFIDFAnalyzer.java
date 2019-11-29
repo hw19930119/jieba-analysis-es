@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Tom Qian
@@ -75,7 +76,7 @@ public class TFIDFAnalyzer {
         }
 
         JiebaSegmenter segmenter = new JiebaSegmenter();
-        List<String> segments = segmenter.sentenceProcess(content);
+        List<String> segments = segmenter.process(content, JiebaSegmenter.SegMode.SEARCH).stream().map(seg -> seg.word).collect(Collectors.toList());
         Map<String, Integer> freqMap = new HashMap<>();
 
         int wordSum = 0;

@@ -1,5 +1,7 @@
 package com.huaban.analysis.jieba;
 
+import com.huaban.analysis.jieba.recognition.HandlePattern;
+import com.huaban.analysis.jieba.recognition.Recognition;
 import com.huaban.analysis.jieba.viterbi.FinalSeg;
 
 import java.nio.file.Path;
@@ -93,8 +95,10 @@ public class JiebaSegmenter {
         return route;
     }
 
-
     public List<SegToken> process(String paragraph, SegMode mode) {
+        HandlePattern hp = Recognition.get().preHandlerWithPatterns(paragraph); //模式替换
+        paragraph = hp.target;
+
         List<SegToken> tokens = new ArrayList<SegToken>();
         StringBuilder sb = new StringBuilder();
         int offset = 0;
@@ -175,8 +179,17 @@ public class JiebaSegmenter {
                 }
             }
         }
-
-        return tokens;
+        List<SegToken> perfectList = new ArrayList<SegToken>();
+        for (SegToken token : tokens) {
+            for (SegToken seg : hp.entities) {//将正则表达式匹配出的词语作为整体，替换回分词结果
+                if (seg.endOffset == token.endOffset && seg.startOffset == token.startOffset) {
+                    token = seg;
+                    break;
+                }
+            }
+            perfectList.add(token);
+        }
+        return Recognition.get().reg(perfectList); //处理人名、地名等
     }
 
     /**
@@ -196,9 +209,9 @@ public class JiebaSegmenter {
     }
 
     /*
-     *
+     * 处理模式匹配后的字串
      */
-    public List<String> sentenceProcess(String sentence) {
+    private List<String> sentenceProcess(String sentence) {
         List<String> tokens = new ArrayList<String>();
         int N = sentence.length();
         Map<Integer, List<Integer>> dag = createDAG(sentence);

@@ -27,8 +27,8 @@ public interface SimilarityRanker extends Similarity {
      * @param targets 目标文本
      * @return 相似度排名结果列表
      */
-    default Hits rank(String source, List<String> targets) {
-        return rank(source, targets, Integer.MAX_VALUE);
+    default Hits rank(String source, List<String> targets, Map<Integer, Integer> weightMap) {
+        return rank(source, targets, Integer.MAX_VALUE, weightMap);
     }
     /**
      * 计算源文本和目标文本的相似度（带id）
@@ -68,12 +68,12 @@ public interface SimilarityRanker extends Similarity {
      * @param topN 相似度排名结果列表只保留相似度分值最高的topN项
      * @return 相似度排名结果列表
      */
-    default Hits rank(String source, List<String> targets, int topN) {
+    default Hits rank(String source, List<String> targets, int topN, Map<Integer, Integer> weightMap) {
         Hits hits = new Hits(topN > targets.size() ? targets.size() : topN);
         targets
             .stream()
             .map(target -> {
-                double score = similarScore(source, target);
+                double score = similarScore(source, target, weightMap);
                 Hit hit = new Hit();
                 hit.setText(target);
                 hit.setScore(score);

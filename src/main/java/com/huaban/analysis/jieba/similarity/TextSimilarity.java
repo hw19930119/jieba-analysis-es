@@ -18,6 +18,8 @@ import com.huaban.analysis.jieba.WordDictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -39,7 +41,7 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
      * @return 相似度分值
      */
     @Override
-    public double similarScore(String text1, String text2) {
+    public double similarScore(String text1, String text2, Map<Integer, Integer> weightMap) {
 
         if (text1 == null || text2 == null) {
             //只要有一个文本为null，规定相似度分值为0，表示完全不相等
@@ -49,7 +51,7 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
         List<Word> words1 = seg(text1);
         List<Word> words2 = seg(text2);
         //计算相似度分值
-        return similarScore(words1, words2);
+        return similarScore(words1, words2, weightMap);
     }
 
     /**
@@ -59,7 +61,7 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
      * @return 相似度分值
      */
     @Override
-    public double similarScore(List<Word> words1, List<Word> words2) {
+    public double similarScore(List<Word> words1, List<Word> words2, Map<Integer, Integer> weightMap) {
         if (words1 == null || words2 == null) {
             //只要有一个文本为null，规定相似度分值为0，表示完全不相等
             return 0.0;
@@ -72,7 +74,7 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
             //如果一个文本为空，另一个不为空，规定相似度分值为0，表示完全不相等
             return 0.0;
         }
-        double score = scoreImpl(words1, words2);
+        double score = scoreImpl(words1, words2, weightMap);
         score = (int) (score * 1000000 + 0.5) / (double) 1000000;
         return score;
     }
@@ -83,7 +85,7 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
      * @param words2 词列表2
      * @return 相似度分值
      */
-    protected abstract double scoreImpl(List<Word> words1, List<Word> words2);
+    protected abstract double scoreImpl(List<Word> words1, List<Word> words2, Map<Integer, Integer> weightMap);
 
     /**
      * 对文本进行分词
@@ -93,10 +95,15 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
     private List<Word> seg(String text) {
         Predicate<SegToken> lengthRule = (token) -> token.word.length() > 1;
         Predicate<SegToken> noStopword = (token) -> !dict.getStopWordsSet().contains(token.word);
-        Predicate<SegToken> andCondition = lengthRule.and(noStopword);
-
+        Predicate<SegToken> noNumRule = (token) -> !token.word.matches("^\\d{1,6}$"); //1-6位数字
+        Predicate<SegToken> andCondition = lengthRule.and(noStopword).and(noNumRule);
         List<SegToken> tokens = segmenter.processWithFilterRule(text, JiebaSegmenter.SegMode.SEARCH, andCondition);
-        List<Word> words = tokens.stream().map(key -> new Word(key.word)).collect(Collectors.toList());
+
+        List<Word> words = tokens.stream().map(token -> {
+            Word word = new Word(token.word);
+            word.setEntity(token.entity);
+            return word;
+        }).collect(Collectors.toList());
         return words;
     }
 
@@ -109,11 +116,9 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
      * @param words1 词列表1
      * @param words2 词列表2
      */
-    protected void taggingWeightWithWordFrequency(List<Word> words1, List<Word> words2) {
-        // if (words1.get(0).getWeight() != null || words2.get(0).getWeight() != null) {
-        //     System.out.println("词已经被指定权重，不再使用词频进行标注");
-        //     return;
-        // }
+    protected void taggingWeightWithWordFrequency(List<Word> words1, List<Word> words2, Map<Integer, Integer> weightMap) {
+        Map<Integer, Integer> notNullMap = Optional.ofNullable(weightMap).orElseGet(HashMap::new);
+        final Set<Integer> keys = notNullMap.keySet();
         //词频统计
         Map<String, AtomicInteger> frequency1 = frequency(words1);
         Map<String, AtomicInteger> frequency2 = frequency(words2);
@@ -122,12 +127,16 @@ public abstract class TextSimilarity implements Similarity, SimilarityRanker {
         System.out.println("词频统计2：" + formatWordsFrequency(frequency2));
         //权重标注
         words1.stream().forEach(word -> {
-            if (word.getWeight() == null) { //词已经被指定权重，不再使用词频进行标注
+            if (keys.contains(word.getEntity())) { //为词组设置权重值，不再用词频作为权重
+                word.setWeight(notNullMap.get(word.getEntity()).floatValue());
+            } else {
                 word.setWeight(frequency1.get(word.getText()).floatValue());
             }
         });
         words2.stream().forEach(word -> {
-            if (word.getWeight() == null) {
+            if (keys.contains(word.getEntity())) { //为词组设置权重值，不再用词频作为权重
+                word.setWeight(notNullMap.get(word.getEntity()).floatValue());
+            } else {
                 word.setWeight(frequency2.get(word.getText()).floatValue());
             }
         });

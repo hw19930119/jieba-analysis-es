@@ -46,6 +46,7 @@ import java.util.UUID;
 public class ESDataManage {
     static String  driver = "org.elasticsearch.xpack.sql.jdbc.jdbc.JdbcDriver";
     static String elasticsearchAddress = "localhost:9200";
+
     public static Properties connectionProperties(){
         Properties properties = new Properties();
 //        properties.put("user", "test_admin");

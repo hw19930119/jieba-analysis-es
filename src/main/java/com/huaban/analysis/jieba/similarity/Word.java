@@ -24,6 +24,8 @@ public class Word implements Comparable {
     //权重，用于词向量分析
     private Float weight;
 
+    private int entity = -1;
+
     public Word(String text) {
         this.text = text;
     }
@@ -52,6 +54,14 @@ public class Word implements Comparable {
 
     public void setWeight(Float weight) {
         this.weight = weight;
+    }
+
+    public int getEntity() {
+        return entity;
+    }
+
+    public void setEntity(int entity) {
+        this.entity = entity;
     }
 
     @Override

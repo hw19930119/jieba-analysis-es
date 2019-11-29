@@ -23,9 +23,6 @@ import junit.framework.TestCase;
 
 import org.junit.Test;
 
-import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -41,7 +38,7 @@ public class JiebaSegmenterTest11 extends TestCase {
     private JiebaSegmenter segmenter = new JiebaSegmenter();
     String[] sentences =
         new String[]{
-            "这个把手该换了，我不喜欢日本和服，别把手放在我的肩膀上，工信处女干事孙悟空每月经过下属科室都要亲口交代24口交换机等技术性器件的安装工作", "一审裁定见习律师兼职律师27日，全国人大常委会第三次审议侵权责任法草案，删除了有关医疗损害责任“举证倒置”的规定。在医患纠纷中本已处于弱势地位的消费者由此将陷入万劫不复的境地", "11月13日下午，记者在建胜镇龙桥花苑小区门口看到，流动摊贩不见了，路面干净整洁，赢得了过往群众的交口称赞。但在整治之前，这里的环境却让居民颇有怨言。 \n" +
+            "这个把手该换了，我不喜欢日本和服，别把手放在我的肩膀上，######工信处女干事孙悟空每月经过下属科室都要亲口交代24口交换机等技术性器件的安装工作", "一审裁定见习律师兼职律师27日，全国人大常委会第三次审议侵权责任法草案，删除了有关医疗损害责任“举证倒置”的规定。在医患纠纷中本已处于弱势地位的消费者由此将陷入万劫不复的境地", "11月13日下午，记者在建胜镇龙桥花苑小区门口看到，流动摊贩不见了，路面干净整洁，赢得了过往群众的交口称赞。但在整治之前，这里的环境却让居民颇有怨言。 \n" +
             "\n" +
             "据了解，2016年业主李梅，身份证号：500102198802012212，电话：18600213245，固定电话：02387898765，家住：建胜镇龙桥花苑小区12栋27-2，陆续入住龙桥花苑小区，随着入住人员增多，一些小商小贩瞄准商机，到此挤占人行道摆摊设点，售卖蔬菜、水果、猪肉等商品，形成“马路市场”，阻碍行人通行，影响了周边环境卫生。“以前，在小区门口的人行道上，曾经同时有30多个小摊贩出摊，不仅造成人行道堵塞，产生的噪声也严重影响居民休息。而且流动摊贩每天产生的大量垃圾，还影响了周边的居住环境。请街道协同区环保局、城管局和执法部门进行整改。” 家住龙桥花苑小区的刘金生说。", "11月12日，福建省明溪县人民法院公开开庭审理一起被告人多达15人的电信诈骗案件，涉案金额高达470余万元。\n" +
             "\n" +
@@ -52,7 +49,7 @@ public class JiebaSegmenterTest11 extends TestCase {
             "　　公诉机关认为，被告人邱某开、胡某伟等犯罪团伙已触犯《中华人民共和国刑法》相关规定，犯罪事实清楚，证据确实充分，数额巨大，应当以诈骗罪追究其刑事责任。\n" +
             "\n" +
             "　　目前，该案还在进一步审理中，并将择期公开宣判。",
-            "2019年10月10号凌晨2点半，二类居住用地涟水交警接警后，发现现场除了受害者李梅上官风，身份证号500102198702014291，电话18600213245，固定电话02387898765，家住：大渡口区建胜镇龙桥花苑小区2栋7-3的血迹、一块机动车号牌苏A F001U和苏AF001U少量玻璃碎片外，没有其他有价值的线索。大渡口区经信委，重庆市秋田齿轮有限公司，令人悲痛的是，第二天上午10点，伤者也因伤势过重经抢救无效身亡。"
+            "2019年10月10号凌晨2点半，大渡口区春晖路街道涟水交警接警后，发现现场除了受害者李梅上官风，身份证号500102198702014291，电话18600213245，固定电话02387898765，家住：大渡口区建胜镇龙桥花苑小区2栋7-3的血迹、一块机动车号牌苏A F001U和苏AF001U少量玻璃碎片外，没有其他有价值的线索。大渡口区经信委，重庆市秋田齿轮有限公司，令人悲痛的是，第二天上午10点，伤者也因伤势过重经抢救无效身亡。"
         };
     String[] longSentences = new String[]{
         "我他妈偏不信我他妈偏"
@@ -61,11 +58,6 @@ public class JiebaSegmenterTest11 extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
-        URI uri = this.getClass().getResource("/").toURI();
-        Path configDir = Paths.get(uri);
-        configDir = Paths.get("conf");
-        String s = configDir.toAbsolutePath().toString();
-        System.out.println(s);
         // WordDictionary.getInstance().init(Paths.get("conf"));
         // WordDictionary.getInstance().addWord("孙小艾");
     }
@@ -82,17 +74,18 @@ public class JiebaSegmenterTest11 extends TestCase {
         Predicate<SegToken> noStopword = (token) -> !WordDictionary.getInstance().getStopWordsSet().contains(token.word);
         Predicate<SegToken> andCondition = lengthRule.and(noStopword);
 
-        for (String sentence : sentences) {
-            List<SegToken> tokens = segmenter.process(sentence, SegMode.SEARCH);
-            System.out.print(String.format(Locale.getDefault(), "\n%s  %s\n%s",
-                LocalDateTime.now(), sentence, tokens.toString()));
-        }
+        // for (String sentence : sentences) {
+        String sentence = "2019年10月10号凌晨2点半，大渡口区春晖路街道涟水交警接警后，发现现场除了受害者李梅上官风，身份证号500102198702014291，电话18600213245，固定电话02387898765，家住：大渡口区建胜镇龙桥花苑小区2栋7-3的血迹、一块机动车号牌苏A F001U和苏AF001U少量玻璃碎片外，没有其他有价值的线索。大渡口区经信委，重庆市秋田齿轮有限公司，令人悲痛的是，第二天上午10点，伤者也因伤势过重经抢救无效身亡。";
+        List<SegToken> tokens = segmenter.processWithFilterRule(sentence, SegMode.SEARCH, andCondition);
+        System.out.print(String.format(Locale.getDefault(), "\n%s  %s\n%s",
+            LocalDateTime.now(), sentence, tokens.toString()));
+        // }
 
-        for (String sentence : sentences) {
-            List<SegToken> tokens = segmenter.processWithFilterRule(sentence, SegMode.SEARCH, andCondition);
-            System.out.print(String.format(Locale.getDefault(), "\n%s\n%s",
-                sentence, tokens.toString()));
-        }
+        // for (String sentence : sentences) {
+        //     List<SegToken> tokens = segmenter.processWithFilterRule(sentence, SegMode.SEARCH, andCondition);
+        //     System.out.print(String.format(Locale.getDefault(), "\n%s\n%s",
+        //         sentence, tokens.toString()));
+        // }
 
     }
 
@@ -116,10 +109,11 @@ public class JiebaSegmenterTest11 extends TestCase {
     @Test
     public void testCutForIndex() {
         System.out.println("-----");
-        for (String sentence : sentences) {
-            List<SegToken> tokens = segmenter.process(sentence, SegMode.INDEX);
-            System.out.print(String.format(Locale.getDefault(), "\n%s\n%s", sentence, tokens.toString()));
-        }
+        // for (String sentence : sentences) {
+        String sentence = "2019年10月10号凌晨2点半，大渡口区春晖路街道涟水交警接警后，发现现场除了受害者李梅上官风，身份证号500102198702014291，电话18600213245，固定电话02387898765，家住：大渡口区建胜镇龙桥花苑小区2栋7-3的血迹、一块机动车号牌苏A F001U和苏AF001U少量玻璃碎片外，没有其他有价值的线索。大渡口区经信委，重庆市秋田齿轮有限公司，令人悲痛的是，第二天上午10点，伤者也因伤势过重经抢救无效身亡。";
+        List<SegToken> tokens = segmenter.process(sentence, SegMode.INDEX);
+        System.out.print(String.format(Locale.getDefault(), "\n%s\n%s", sentence, tokens.toString()));
+        // }
     }
 
 

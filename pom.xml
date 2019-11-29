@@ -69,6 +69,16 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.3.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.fnlp</groupId>
+            <artifactId>fnlp-all</artifactId>
+            <version>2.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.trove4j</groupId>
+            <artifactId>trove4j</artifactId>
+            <version>3.0.3</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -176,6 +186,35 @@
                 <configuration>
                     <source>8</source>
                     <target>8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <useUniqueVersions>false</useUniqueVersions>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>com.huaban.analysis.jieba.ESDataManage</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <version>${project.version}</version>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>
